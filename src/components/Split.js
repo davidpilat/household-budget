@@ -1,7 +1,9 @@
 import React from 'react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-export default function Split({ expenses, settings }) {
+const fmt = n => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+export default function Split({ expenses, settings, bookProfit }) {
   const p1Expenses = expenses.filter(e => e.paid_by === 'p1')
   const p2Expenses = expenses.filter(e => e.paid_by === 'p2')
   const sharedExpenses = expenses.filter(e => e.paid_by === 'shared')
@@ -15,8 +17,6 @@ export default function Split({ expenses, settings }) {
 
   const diff = p1Effective - p2Effective
   const owed = Math.abs(diff)
-
-  const fmt = n => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const pieData = [
     { name: settings.p1_name, value: Math.round(p1Total * 100) / 100 },
@@ -34,16 +34,15 @@ export default function Split({ expenses, settings }) {
           <div className="split-person">
             <div className="split-name">{settings.p1_name}</div>
             <div className="split-amount">{fmt(p1Effective)}</div>
-            <div className="split-detail">
-              {fmt(p1Total)} personal · {fmt(sharedTotal / 2)} shared
-            </div>
+            <div className="split-detail">{fmt(p1Total)} personal · {fmt(sharedTotal / 2)} shared</div>
           </div>
           <div className="split-person">
             <div className="split-name">{settings.p2_name}</div>
             <div className="split-amount">{fmt(p2Effective)}</div>
-            <div className="split-detail">
-              {fmt(p2Total)} personal · {fmt(sharedTotal / 2)} shared
-            </div>
+            <div className="split-detail">{fmt(p2Total)} personal · {fmt(sharedTotal / 2)} shared</div>
+            {bookProfit > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--c-green)', marginTop: 4 }}>+{fmt(bookProfit)} book income</div>
+            )}
           </div>
         </div>
 
@@ -69,7 +68,7 @@ export default function Split({ expenses, settings }) {
                   {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={v => fmt(v)} />
-                <Legend formatter={(v) => v} iconType="circle" iconSize={9} />
+                <Legend formatter={v => v} iconType="circle" iconSize={9} />
               </PieChart>
             </ResponsiveContainer>
           </div>
