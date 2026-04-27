@@ -17,11 +17,20 @@ const CAT_COLORS = {
   Other: { bg: '#f0efe9', text: '#6b6960' },
 }
 
+const today = () => new Date().toISOString().slice(0, 10)
+
+const fmtDate = (d) => {
+  if (!d) return ''
+  const [year, month, day] = d.slice(0, 10).split('-')
+  return `${month}/${day}/${year}`
+}
+
 export default function Expenses({ expenses, settings, currentMonth, setSyncing }) {
   const [desc, setDesc] = useState('')
   const [cat, setCat] = useState('Food')
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState('shared')
+  const [date, setDate] = useState(today())
   const [filter, setFilter] = useState('')
   const [adding, setAdding] = useState(false)
 
@@ -29,15 +38,14 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
     if (!desc.trim() || !amount || isNaN(parseFloat(amount))) return
     setAdding(true)
     setSyncing(true)
-    const day = new Date().getDate().toString().padStart(2, '0')
     await supabase.from('expenses').insert({
       description: desc.trim(),
       category: cat,
       amount: parseFloat(amount),
       paid_by: paidBy,
-      date: `${currentMonth}-${day}`,
+      date: date,
     })
-    setDesc(''); setAmount('')
+    setDesc(''); setAmount(''); setDate(today())
     setAdding(false); setSyncing(false)
   }
 
@@ -48,6 +56,8 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
   }
 
   const filtered = filter ? expenses.filter(e => e.category === filter) : expenses
+
+  const sorted = [...filtered].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
 
   const whoLabel = (p) => {
     if (p === 'shared') return 'Shared'
@@ -74,6 +84,10 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
             onChange={e => setAmount(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && add()}
           />
+          <input
+            type="date" value={date}
+            onChange={e => setDate(e.target.value)}
+          />
           <select value={paidBy} onChange={e => setPaidBy(e.target.value)}>
             <option value="shared">Shared</option>
             <option value="p1">{settings.p1_name}</option>
@@ -88,7 +102,7 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
       <div className="card">
         <div className="filter-row">
           <span className="card-title" style={{ margin: 0 }}>
-            {filtered.length} expense{filtered.length !== 1 ? 's' : ''}
+            {sorted.length} expense{sorted.length !== 1 ? 's' : ''}
           </span>
           <select value={filter} onChange={e => setFilter(e.target.value)} style={{ width: 'auto', height: 30, padding: '4px 10px', fontSize: 12 }}>
             <option value="">All categories</option>
@@ -96,14 +110,15 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
           </select>
         </div>
 
-        {!filtered.length
+        {!sorted.length
           ? <div className="empty">No expenses yet. Add one above.</div>
           : (
             <div className="expense-list">
-              {filtered.map(e => {
+              {sorted.map(e => {
                 const colors = CAT_COLORS[e.category] || { bg: '#f0efe9', text: '#6b6960' }
                 return (
                   <div key={e.id} className="expense-row">
+                    <span className="exp-date">{fmtDate(e.date)}</span>
                     <span className="exp-desc">{e.description}</span>
                     <span className="badge exp-cat-badge" style={{ background: colors.bg, color: colors.text }}>
                       {e.category}
