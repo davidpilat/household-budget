@@ -2,8 +2,8 @@ import React from 'react'
 import { supabase } from '../lib/supabase'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const CATEGORIES = ['Housing', 'Food', 'Transport', 'Health', 'Entertainment', 'Shopping', 'Other']
-const CAT_COLOR = { Housing:'#2d5be3', Food:'#1a7a4a', Transport:'#b05c00', Health:'#c0392b', Entertainment:'#6c3bd5', Shopping:'#c0490a', Other:'#888780' }
+const CATEGORIES = ['Snacks', 'Utilities', 'Insurance', 'Subscriptions']
+const CAT_COLOR = { Snacks:'#1a7a4a', Utilities:'#2d5be3', Insurance:'#c0392b', Subscriptions:'#6c3bd5' }
 
 export default function Budgets({ expenses, budgets, setSyncing }) {
   const updateBudget = async (cat, val) => {

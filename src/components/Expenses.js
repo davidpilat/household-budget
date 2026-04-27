@@ -1,21 +1,18 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const CATEGORIES = ['Housing', 'Food', 'Transport', 'Health', 'Entertainment', 'Shopping', 'Other']
+const CATEGORIES = ['Snacks', 'Utilities', 'Insurance', 'Subscriptions']
 
 const CAT_COLORS = {
-  Housing: { bg: '#eef2fd', text: '#2d5be3' },
-  Food: { bg: '#e8f5ee', text: '#1a7a4a' },
-  Transport: { bg: '#fef3e2', text: '#b05c00' },
-  Health: { bg: '#fdecea', text: '#c0392b' },
-  Entertainment: { bg: '#f0effe', text: '#6c3bd5' },
-  Shopping: { bg: '#fff0eb', text: '#c0490a' },
-  Other: { bg: '#f0efe9', text: '#6b6960' },
+  Snacks: { bg: '#e8f5ee', text: '#1a7a4a' },
+  Utilities: { bg: '#eef2fd', text: '#2d5be3' },
+  Insurance: { bg: '#fdecea', text: '#c0392b' },
+  Subscriptions: { bg: '#f0effe', text: '#6c3bd5' },
 }
 
 export default function Expenses({ expenses, settings, currentMonth, setSyncing }) {
   const [desc, setDesc] = useState('')
-  const [cat, setCat] = useState('Food')
+  const [cat, setCat] = useState('Snacks')
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState('shared')
   const [filter, setFilter] = useState('')
