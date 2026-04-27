@@ -2,8 +2,8 @@ import React from 'react'
 import { supabase } from '../lib/supabase'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const CATEGORIES = ['Snacks', 'Utilities', 'Insurance', 'Subscriptions']
-const CAT_COLOR = { Snacks:'#1a7a4a', Utilities:'#2d5be3', Insurance:'#c0392b', Subscriptions:'#6c3bd5' }
+const CATEGORIES = ['Housing', 'Food', 'Transport', 'Health', 'Entertainment', 'Shopping', 'Snacks', 'Utilities', 'Insurance', 'Subscriptions', 'Other']
+const CAT_COLOR = { Housing:'#2d5be3', Food:'#1a7a4a', Transport:'#b05c00', Health:'#c0392b', Entertainment:'#6c3bd5', Shopping:'#c0490a', Snacks:'#0e7a5a', Utilities:'#1a4ab0', Insurance:'#8a4500', Subscriptions:'#5c2db0', Other:'#888780' }
 
 export default function Budgets({ expenses, budgets, setSyncing }) {
   const updateBudget = async (cat, val) => {
@@ -51,7 +51,7 @@ export default function Budgets({ expenses, budgets, setSyncing }) {
         <div className="chart-container">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 4 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={v => '$' + v.toLocaleString()} />
               <Tooltip formatter={(v, n) => ['$' + v.toLocaleString(), n === 'spent' ? 'Spent' : 'Budget']} />
               <Bar dataKey="budget" fill="#e8e7e0" radius={[4, 4, 0, 0]} />

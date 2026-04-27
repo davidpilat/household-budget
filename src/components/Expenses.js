@@ -1,18 +1,25 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const CATEGORIES = ['Snacks', 'Utilities', 'Insurance', 'Subscriptions']
+const CATEGORIES = ['Housing', 'Food', 'Transport', 'Health', 'Entertainment', 'Shopping', 'Snacks', 'Utilities', 'Insurance', 'Subscriptions', 'Other']
 
 const CAT_COLORS = {
-  Snacks: { bg: '#e8f5ee', text: '#1a7a4a' },
-  Utilities: { bg: '#eef2fd', text: '#2d5be3' },
-  Insurance: { bg: '#fdecea', text: '#c0392b' },
-  Subscriptions: { bg: '#f0effe', text: '#6c3bd5' },
+  Housing: { bg: '#eef2fd', text: '#2d5be3' },
+  Food: { bg: '#e8f5ee', text: '#1a7a4a' },
+  Transport: { bg: '#fef3e2', text: '#b05c00' },
+  Health: { bg: '#fdecea', text: '#c0392b' },
+  Entertainment: { bg: '#f0effe', text: '#6c3bd5' },
+  Shopping: { bg: '#fff0eb', text: '#c0490a' },
+  Snacks: { bg: '#e8f5ee', text: '#0e7a5a' },
+  Utilities: { bg: '#e6f1fb', text: '#1a4ab0' },
+  Insurance: { bg: '#fef3e2', text: '#8a4500' },
+  Subscriptions: { bg: '#f5eefe', text: '#5c2db0' },
+  Other: { bg: '#f0efe9', text: '#6b6960' },
 }
 
 export default function Expenses({ expenses, settings, currentMonth, setSyncing }) {
   const [desc, setDesc] = useState('')
-  const [cat, setCat] = useState('Snacks')
+  const [cat, setCat] = useState('Food')
   const [amount, setAmount] = useState('')
   const [paidBy, setPaidBy] = useState('shared')
   const [filter, setFilter] = useState('')
@@ -94,7 +101,7 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
           : (
             <div className="expense-list">
               {filtered.map(e => {
-                const colors = CAT_COLORS[e.category] || CAT_COLORS.Other
+                const colors = CAT_COLORS[e.category] || { bg: '#f0efe9', text: '#6b6960' }
                 return (
                   <div key={e.id} className="expense-row">
                     <span className="exp-desc">{e.description}</span>
