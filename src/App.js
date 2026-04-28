@@ -48,18 +48,20 @@ export default function App() {
   const [books, setBooks] = useState([])
   const [recurring, setRecurring] = useState([])
   const [bonuses, setBonuses] = useState([])
+  const [incomeHistory, setIncomeHistory] = useState([])
   const [currentMonth, setCurrentMonth] = useState(() => new Date().toISOString().slice(0, 7))
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
   const fetchAll = useCallback(async () => {
-    const [{ data: expData }, { data: budData }, { data: setData }, { data: bookData }, { data: recData }, { data: bonData }] = await Promise.all([
+    const [{ data: expData }, { data: budData }, { data: setData }, { data: bookData }, { data: recData }, { data: bonData }, { data: ihData }] = await Promise.all([
       supabase.from('expenses').select('*').order('created_at', { ascending: false }),
       supabase.from('budgets').select('*'),
       supabase.from('settings').select('*'),
       supabase.from('books').select('*').order('date', { ascending: false }),
       supabase.from('recurring').select('*').order('day_of_month', { ascending: true }),
       supabase.from('bonuses').select('*').order('created_at', { ascending: false }),
+      supabase.from('income_history').select('*').order('effective_from', { ascending: true }),
     ])
     if (expData) setExpenses(expData)
     if (budData) { const map = {}; budData.forEach(b => { map[b.category] = b.amount }); setBudgets(map) }
@@ -71,6 +73,7 @@ export default function App() {
     if (bookData) setBooks(bookData)
     if (recData) setRecurring(recData)
     if (bonData) setBonuses(bonData)
+    if (ihData) setIncomeHistory(ihData)
     setLoading(false)
   }, [])
 
@@ -83,6 +86,7 @@ export default function App() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'books' }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'recurring' }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bonuses' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'income_history' }, fetchAll)
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [fetchAll])
@@ -158,8 +162,8 @@ export default function App() {
         {tab === 'Split' && <Split expenses={monthExpenses} settings={settings} bookProfit={bookProfit} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} />}
         {tab === 'Books' && <Books books={monthBooks} currentMonth={currentMonth} setSyncing={setSyncing} settings={settings} />}
         {tab === 'Recurring' && <Recurring recurring={recurring} setSyncing={setSyncing} settings={settings} expenses={monthExpenses} currentMonth={currentMonth} />}
-        {tab === 'Year' && <YearlySummary expenses={expenses} books={books} bonuses={bonuses} settings={settings} currentMonth={currentMonth} />}
-        {tab === 'Settings' && <Settings settings={settings} setSettings={setSettings} setSyncing={setSyncing} p2BookIncome={bookProfit} bonuses={bonuses} currentMonth={currentMonth} p1Income={p1Income} p2Income={p2Income} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} />}
+        {tab === 'Year' && <YearlySummary expenses={expenses} books={books} bonuses={bonuses} settings={settings} currentMonth={currentMonth} incomeHistory={incomeHistory} />}
+        {tab === 'Settings' && <Settings settings={settings} setSettings={setSettings} setSyncing={setSyncing} p2BookIncome={bookProfit} bonuses={bonuses} currentMonth={currentMonth} p1Income={p1Income} p2Income={p2Income} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} incomeHistory={incomeHistory} />}
       </main>
     </div>
   )

@@ -191,6 +191,62 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         }
       </div>
 
+      {/* Income history */}
+      <div className="card">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+          <span className="card-title" style={{ margin:0 }}>Income history / raises</span>
+        </div>
+        <p style={{ fontSize:13, color:'var(--c-text2)', marginBottom:12 }}>
+          Log a raise so past months keep their original income. Each entry applies from that date forward until the next entry.
+        </p>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 100px 100px auto', gap:8, marginBottom:12, alignItems:'end' }}>
+          <div className="form-group">
+            <label className="form-label">Effective from</label>
+            <input type="date" id="ih-date" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">{settings.p1_name}</label>
+            <input type="number" id="ih-p1" placeholder="0" min="0" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">{settings.p2_name}</label>
+            <input type="number" id="ih-p2" placeholder="0" min="0" />
+          </div>
+          <button className="btn btn-primary" style={{ marginTop:18 }} onClick={async () => {
+            const date = document.getElementById('ih-date').value
+            const p1 = document.getElementById('ih-p1').value
+            const p2 = document.getElementById('ih-p2').value
+            if (!date) return
+            setSyncing(true)
+            await supabase.from('income_history').insert({
+              effective_from: date.slice(0,7),
+              p1_income: parseFloat(p1)||0,
+              p1_mode: settings.p1_income_mode||'monthly',
+              p1_anchor: settings.p1_pay_anchor||'',
+              p2_income: parseFloat(p2)||0,
+              p2_mode: settings.p2_income_mode||'monthly',
+              p2_anchor: settings.p2_pay_anchor||'',
+            })
+            document.getElementById('ih-date').value = ''
+            document.getElementById('ih-p1').value = ''
+            document.getElementById('ih-p2').value = ''
+            setSyncing(false)
+          }}>Save</button>
+        </div>
+        {(incomeHistory||[]).length > 0 && (
+          <div>
+            {[...incomeHistory].sort((a,b)=>b.effective_from.localeCompare(a.effective_from)).map(r => (
+              <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--c-border)', fontSize:13 }}>
+                <span style={{ fontFamily:"'DM Mono',monospace", color:'var(--c-text2)', minWidth:60 }}>{r.effective_from}</span>
+                <span style={{ flex:1 }}>{settings.p1_name}: ${parseFloat(r.p1_income||0).toLocaleString()}</span>
+                <span style={{ flex:1 }}>{settings.p2_name}: ${parseFloat(r.p2_income||0).toLocaleString()}</span>
+                <button className="exp-del" onClick={async () => { setSyncing(true); await supabase.from('income_history').delete().eq('id',r.id); setSyncing(false) }}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Data */}
       <div className="card">
         <div className="card-title">Data</div>
