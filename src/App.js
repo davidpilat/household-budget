@@ -6,9 +6,10 @@ import Split from './components/Split'
 import Settings from './components/Settings'
 import Books from './components/Books'
 import Recurring from './components/Recurring'
+import YearlySummary from './components/YearlySummary'
 import './App.css'
 
-const TABS = ['Expenses', 'Budgets', 'Split', 'Books', 'Recurring', 'Settings']
+const TABS = ['Expenses', 'Budgets', 'Split', 'Books', 'Recurring', 'Year', 'Settings']
 
 function biweeklyInMonth(anchor, month) {
   if (!anchor || !month || !anchor.includes('-') || !month.includes('-')) return 2
@@ -98,13 +99,14 @@ export default function App() {
   const p1Bonuses = monthBonuses.filter(b => b.paid_to === 'p1').reduce((s, b) => s + parseFloat(b.amount || 0), 0)
   const p2Bonuses = monthBonuses.filter(b => b.paid_to === 'p2').reduce((s, b) => s + parseFloat(b.amount || 0), 0)
 
+  console.log('INCOME DEBUG:', settings.p1_income, settings.p1_income_mode, settings.p1_pay_anchor, currentMonth)
   const p1Base = calcIncome(settings.p1_income, settings.p1_income_mode || 'monthly', settings.p1_pay_anchor || '', currentMonth)
   const p2Base = calcIncome(settings.p2_income, settings.p2_income_mode || 'monthly', settings.p2_pay_anchor || '', currentMonth)
 
   const p1Income = p1Base + p1Bonuses
   const p2Income = p2Base + bookProfit + p2Bonuses
   const totalIncome = p1Income + p2Income
-  const totalSpent = monthExpenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0)
+  const totalSpent = monthExpenses.reduce((s, e) => s + parseFloat(e.amount || 0), 0)  // refunds have negative amounts so they auto-subtract
   const remaining = totalIncome - totalSpent
 
   const fmt = n => '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -156,6 +158,7 @@ export default function App() {
         {tab === 'Split' && <Split expenses={monthExpenses} settings={settings} bookProfit={bookProfit} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} />}
         {tab === 'Books' && <Books books={monthBooks} currentMonth={currentMonth} setSyncing={setSyncing} settings={settings} />}
         {tab === 'Recurring' && <Recurring recurring={recurring} setSyncing={setSyncing} settings={settings} expenses={monthExpenses} currentMonth={currentMonth} />}
+        {tab === 'Year' && <YearlySummary expenses={expenses} books={books} bonuses={bonuses} settings={settings} currentMonth={currentMonth} />}
         {tab === 'Settings' && <Settings settings={settings} setSettings={setSettings} setSyncing={setSyncing} p2BookIncome={bookProfit} bonuses={bonuses} currentMonth={currentMonth} p1Income={p1Income} p2Income={p2Income} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} />}
       </main>
     </div>
