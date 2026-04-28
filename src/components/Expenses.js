@@ -136,16 +136,18 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
         </div>
 
         {showRefundForm ? (
-          <div>
-            <p style={{ fontSize: 12, color: 'var(--c-green)', marginBottom: 8 }}>Refunds reduce your total spent for the month.</p>
-            <div className="add-form">
-              <input type="text" placeholder="Description (e.g. Amazon return)" value={refundDesc}
-                onChange={e => setRefundDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRefund()} />
+          <div className="add-form">
+            <p style={{ fontSize: 12, color: 'var(--c-green)' }}>Refunds reduce your total spent for the month.</p>
+            <input type="text" placeholder="Description (e.g. Amazon return)" value={refundDesc}
+              onChange={e => setRefundDesc(e.target.value)} />
+            <div className="add-form-row">
               <select value={refundCat} onChange={e => setRefundCat(e.target.value)}>
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}
               </select>
               <input type="number" placeholder="$0.00" value={refundAmount} min="0" step="0.01"
-                onChange={e => setRefundAmount(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRefund()} />
+                onChange={e => setRefundAmount(e.target.value)} />
+            </div>
+            <div className="add-form-row">
               <input type="date" value={refundDate} onChange={e => setRefundDate(e.target.value)} />
               <select value={paidBy} onChange={e => setPaidBy(e.target.value)}>
                 <option value="shared">Shared</option>
@@ -153,7 +155,7 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
                 <option value="p2">{settings.p2_name}</option>
               </select>
               <button className="btn btn-primary" onClick={addRefund} disabled={addingRefund}
-                style={{ background: 'var(--c-green)', border: 'none' }}>
+                style={{ background: 'var(--c-green)', border: 'none', flexShrink: 0 }}>
                 {addingRefund ? '…' : 'Save'}
               </button>
             </div>
@@ -162,18 +164,22 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
           <div className="add-form">
             <input type="text" placeholder="Description" value={desc}
               onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
-            <select value={cat} onChange={e => setCat(e.target.value)}>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-            <input type="number" placeholder="$0.00" value={amount} min="0" step="0.01"
-              onChange={e => setAmount(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-            <select value={paidBy} onChange={e => setPaidBy(e.target.value)}>
-              <option value="shared">Shared</option>
-              <option value="p1">{settings.p1_name}</option>
-              <option value="p2">{settings.p2_name}</option>
-            </select>
-            <button className="btn btn-primary" onClick={add} disabled={adding}>{adding ? '…' : 'Add'}</button>
+            <div className="add-form-row">
+              <select value={cat} onChange={e => setCat(e.target.value)}>
+                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+              <input type="number" placeholder="$0.00" value={amount} min="0" step="0.01"
+                onChange={e => setAmount(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
+            </div>
+            <div className="add-form-row">
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+              <select value={paidBy} onChange={e => setPaidBy(e.target.value)}>
+                <option value="shared">Shared</option>
+                <option value="p1">{settings.p1_name}</option>
+                <option value="p2">{settings.p2_name}</option>
+              </select>
+              <button className="btn btn-primary" onClick={add} disabled={adding} style={{ flexShrink: 0 }}>{adding ? '…' : 'Add'}</button>
+            </div>
           </div>
         )}
       </div>
@@ -200,36 +206,40 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
                 const isRefund = e.is_refund || parseFloat(e.amount) < 0
                 return (
                   <div key={e.id} className="expense-row" style={{ opacity: isRefund ? 0.85 : 1 }}>
-                    <span className="exp-date">{fmtDate(e.date)}</span>
-                    <span className="exp-desc">
-                      {isRefund && <span style={{ fontSize: 10, background: 'var(--c-green-bg)', color: 'var(--c-green)', padding: '1px 5px', borderRadius: 4, marginRight: 5, fontWeight: 600 }}>REFUND</span>}
-                      {e.description}
-                    </span>
-                    {editCatId === e.id ? (
-                      <select
-                        defaultValue={e.category}
-                        autoFocus
-                        onChange={ev => updateCategory(e.id, ev.target.value)}
-                        onBlur={() => setEditCatId(null)}
-                        style={{ fontSize: 11, height: 24, padding: '0 6px', borderRadius: 8 }}
-                      >
-                        {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                      </select>
-                    ) : (
-                      <span
-                        className="badge exp-cat-badge"
-                        style={{ background: colors.bg, color: colors.text, cursor: 'pointer' }}
-                        title="Click to change category"
-                        onClick={() => setEditCatId(e.id)}
-                      >
-                        {e.category} ✎
+                    <div className="exp-row-top">
+                      <span className="exp-date">{fmtDate(e.date)}</span>
+                      <span className="exp-desc">
+                        {isRefund && <span style={{ fontSize: 10, background: 'var(--c-green-bg)', color: 'var(--c-green)', padding: '1px 5px', borderRadius: 4, marginRight: 5, fontWeight: 600 }}>REFUND</span>}
+                        {e.description}
                       </span>
-                    )}
-                    <span className="exp-who">{whoLabel(e.paid_by)}</span>
-                    <span className="exp-amount" style={{ color: isRefund ? 'var(--c-green)' : 'inherit' }}>
-                      {isRefund ? '-' : ''}${Math.abs(parseFloat(e.amount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    <button className="exp-del" onClick={() => del(e.id)}>×</button>
+                      <span className="exp-amount" style={{ color: isRefund ? 'var(--c-green)' : 'inherit' }}>
+                        {isRefund ? '-' : ''}${Math.abs(parseFloat(e.amount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                      <button className="exp-del" onClick={() => del(e.id)}>×</button>
+                    </div>
+                    <div className="exp-row-bottom">
+                      {editCatId === e.id ? (
+                        <select
+                          defaultValue={e.category}
+                          autoFocus
+                          onChange={ev => updateCategory(e.id, ev.target.value)}
+                          onBlur={() => setEditCatId(null)}
+                          style={{ fontSize: 12, height: 28, padding: '0 24px 0 8px', borderRadius: 8, width: 'auto' }}
+                        >
+                          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      ) : (
+                        <span
+                          className="badge exp-cat-badge"
+                          style={{ background: colors.bg, color: colors.text, cursor: 'pointer' }}
+                          title="Tap to change category"
+                          onClick={() => setEditCatId(e.id)}
+                        >
+                          {e.category} ✎
+                        </span>
+                      )}
+                      <span className="exp-who">{whoLabel(e.paid_by)}</span>
+                    </div>
                   </div>
                 )
               })}
