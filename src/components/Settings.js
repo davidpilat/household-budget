@@ -109,7 +109,7 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         </div>
         <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--c-surface2)', borderRadius: 'var(--radius)', fontSize: 13 }}>
           <span style={{ color: 'var(--c-text2)' }}>
-            {p1Mode === 'biweekly' ? `Biweekly × paychecks this month` : 'Monthly salary'}
+            {p1Mode === 'biweekly' ? 'Biweekly paychecks this month' : 'Monthly salary'}
             {p1Bonuses > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+ {fmt(p1Bonuses)} bonus</span>}
           </span>
           <span style={{ float: 'right', fontWeight: 600, color: 'var(--c-text)', fontFamily: "'DM Mono', monospace" }}>{fmt(p1Income)}</span>
@@ -148,7 +148,7 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         </div>
         <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--c-surface2)', borderRadius: 'var(--radius)', fontSize: 13 }}>
           <span style={{ color: 'var(--c-text2)' }}>
-            {p2Mode === 'biweekly' ? `Biweekly × paychecks this month` : 'Monthly salary'}
+            {p2Mode === 'biweekly' ? 'Biweekly paychecks this month' : 'Monthly salary'}
             {p2BookIncome > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+ {fmt(p2BookIncome)} books</span>}
             {p2Bonuses > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+ {fmt(p2Bonuses)} bonus</span>}
           </span>
