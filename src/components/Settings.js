@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 const fmt = n => '$' + Math.abs(parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-export default function Settings({ settings, setSettings, setSyncing, p2BookIncome = 0, bonuses = [], currentMonth, p1Income = 0, p2Income = 0, p1Bonuses = 0, p2Bonuses = 0 }) {
+export default function Settings({ settings, setSettings, setSyncing, p2BookIncome = 0, bonuses = [], currentMonth, p1Income = 0, p2Income = 0, p1Bonuses = 0, p2Bonuses = 0, incomeHistory = [] }) {
   const [showBonusForm, setShowBonusForm] = useState(false)
   const [bonusDesc, setBonusDesc] = useState('')
   const [bonusAmt, setBonusAmt] = useState('')
