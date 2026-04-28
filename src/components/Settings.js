@@ -77,13 +77,13 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
 
   // Calculate effective monthly income from biweekly paycheck amount
   const effectiveMonthly = (paycheck, mode, anchorDate, month) => {
-    if (mode !== 'biweekly' || !anchorDate || !month) return parseFloat(paycheck) || 0
+    if (mode !== 'biweekly' || !anchorDate || !month || typeof month !== 'string' || !month.includes('-')) return parseFloat(paycheck) || 0
     const [y, m] = month.split('-').map(Number)
     const checks = biweeklyPaychecksInMonth(y, m, anchorDate)
     return (parseFloat(paycheck) || 0) * checks
   }
 
-  const safeMonth = currentMonth || new Date().toISOString().slice(0, 7)
+  const safeMonth = (currentMonth && typeof currentMonth === "string" && currentMonth.includes("-")) ? currentMonth : new Date().toISOString().slice(0, 7)
   const [yr, mo] = safeMonth.split('-').map(Number)
   const p1Effective = effectiveMonthly(settings.p1_income, p1Mode, settings.p1_pay_anchor, safeMonth)
   const p2Base = effectiveMonthly(settings.p2_income, p2Mode, settings.p2_pay_anchor, safeMonth)
