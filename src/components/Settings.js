@@ -77,7 +77,7 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
 
   // Calculate effective monthly income from biweekly paycheck amount
   const effectiveMonthly = (paycheck, mode, anchorDate, month) => {
-    if (mode !== 'biweekly' || !anchorDate) return parseFloat(paycheck) || 0
+    if (mode !== 'biweekly' || !anchorDate || !month) return parseFloat(paycheck) || 0
     const [y, m] = month.split('-').map(Number)
     const checks = biweeklyPaychecksInMonth(y, m, anchorDate)
     return (parseFloat(paycheck) || 0) * checks
@@ -85,9 +85,9 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
 
   const safeMonth = currentMonth || new Date().toISOString().slice(0, 7)
   const [yr, mo] = safeMonth.split('-').map(Number)
-  const p1Effective = effectiveMonthly(settings.p1_income, p1Mode, settings.p1_pay_anchor, currentMonth)
-  const p2Base = effectiveMonthly(settings.p2_income, p2Mode, settings.p2_pay_anchor, currentMonth)
-  const monthBonuses = bonuses.filter(b => b.month === currentMonth)
+  const p1Effective = effectiveMonthly(settings.p1_income, p1Mode, settings.p1_pay_anchor, safeMonth)
+  const p2Base = effectiveMonthly(settings.p2_income, p2Mode, settings.p2_pay_anchor, safeMonth)
+  const monthBonuses = bonuses.filter(b => b.month === safeMonth)
   const p1Bonuses = monthBonuses.filter(b => b.paid_to === 'p1').reduce((s, b) => s + parseFloat(b.amount), 0)
   const p2Bonuses = monthBonuses.filter(b => b.paid_to === 'p2').reduce((s, b) => s + parseFloat(b.amount), 0)
   const p2Total = p2Base + (parseFloat(p2BookIncome) || 0) + p2Bonuses
