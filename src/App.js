@@ -98,7 +98,6 @@ export default function App() {
   const p1Bonuses = monthBonuses.filter(b => b.paid_to === 'p1').reduce((s, b) => s + parseFloat(b.amount || 0), 0)
   const p2Bonuses = monthBonuses.filter(b => b.paid_to === 'p2').reduce((s, b) => s + parseFloat(b.amount || 0), 0)
 
-  console.log('INCOME DEBUG:', settings.p1_income, settings.p1_income_mode, settings.p1_pay_anchor, currentMonth)
   const p1Base = calcIncome(settings.p1_income, settings.p1_income_mode || 'monthly', settings.p1_pay_anchor || '', currentMonth)
   const p2Base = calcIncome(settings.p2_income, settings.p2_income_mode || 'monthly', settings.p2_pay_anchor || '', currentMonth)
 
