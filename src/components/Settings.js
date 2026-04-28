@@ -1,14 +1,59 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 const fmt = n => '$' + Math.abs(parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-export default function Settings({ settings, setSettings, setSyncing, p2BookIncome }) {
+// How many paychecks fall in a given month for biweekly pay
+function biweeklyPaychecksInMonth(year, month, firstPayDate) {
+  // firstPayDate: a known past pay date (YYYY-MM-DD) as anchor
+  const anchor = new Date(firstPayDate + 'T00:00:00')
+  const start = new Date(year, month - 1, 1)
+  const end = new Date(year, month, 0) // last day of month
+  let count = 0
+  // Walk forward from anchor finding all biweekly dates
+  let pay = new Date(anchor)
+  // Rewind to before the month start
+  while (pay > start) pay = new Date(pay.getTime() - 14 * 86400000)
+  // Walk forward counting paydays in month
+  while (pay <= end) {
+    pay = new Date(pay.getTime() + 14 * 86400000)
+    if (pay >= start && pay <= end) count++
+  }
+  return count
+}
+
+export default function Settings({ settings, setSettings, setSyncing, p2BookIncome, bonuses, currentMonth }) {
+  const [showBonusForm, setShowBonusForm] = useState(false)
+  const [bonusDesc, setBonusDesc] = useState('')
+  const [bonusAmt, setBonusAmt] = useState('')
+  const [bonusWho, setBonusWho] = useState('p1')
+  const [addingBonus, setAddingBonus] = useState(false)
+
   const save = async (key, value) => {
     setSyncing(true)
     setSettings(prev => ({ ...prev, [key]: value }))
     await supabase.from('settings').upsert({ key, value: String(value) }, { onConflict: 'key' })
     setSyncing(false)
+  }
+
+  const deleteBonus = async (id) => {
+    setSyncing(true)
+    await supabase.from('bonuses').delete().eq('id', id)
+    setSyncing(false)
+  }
+
+  const addBonus = async () => {
+    if (!bonusAmt || isNaN(parseFloat(bonusAmt))) return
+    setAddingBonus(true)
+    setSyncing(true)
+    await supabase.from('bonuses').insert({
+      description: bonusDesc.trim() || 'Bonus',
+      amount: parseFloat(bonusAmt),
+      paid_to: bonusWho,
+      month: currentMonth,
+    })
+    setBonusDesc(''); setBonusAmt('')
+    setAddingBonus(false); setSyncing(false); setShowBonusForm(false)
   }
 
   const exportCSV = async () => {
@@ -26,11 +71,30 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
     a.click()
   }
 
-  const p2Base = parseFloat(settings.p2_income) || 0
-  const p2Total = p2Base + (parseFloat(p2BookIncome) || 0)
+  // Income mode: 'monthly' | 'biweekly'
+  const p1Mode = settings.p1_income_mode || 'monthly'
+  const p2Mode = settings.p2_income_mode || 'monthly'
+
+  // Calculate effective monthly income from biweekly paycheck amount
+  const effectiveMonthly = (paycheck, mode, anchorDate, month) => {
+    if (mode !== 'biweekly' || !anchorDate) return parseFloat(paycheck) || 0
+    const [y, m] = month.split('-').map(Number)
+    const checks = biweeklyPaychecksInMonth(y, m, anchorDate)
+    return (parseFloat(paycheck) || 0) * checks
+  }
+
+  const [yr, mo] = currentMonth.split('-').map(Number)
+  const p1Effective = effectiveMonthly(settings.p1_income, p1Mode, settings.p1_pay_anchor, currentMonth)
+  const p2Base = effectiveMonthly(settings.p2_income, p2Mode, settings.p2_pay_anchor, currentMonth)
+  const monthBonuses = bonuses.filter(b => b.month === currentMonth)
+  const p1Bonuses = monthBonuses.filter(b => b.paid_to === 'p1').reduce((s, b) => s + parseFloat(b.amount), 0)
+  const p2Bonuses = monthBonuses.filter(b => b.paid_to === 'p2').reduce((s, b) => s + parseFloat(b.amount), 0)
+  const p2Total = p2Base + (parseFloat(p2BookIncome) || 0) + p2Bonuses
+  const p1Total = p1Effective + p1Bonuses
 
   return (
     <div>
+      {/* Names */}
       <div className="card">
         <div className="card-title">Names</div>
         <div className="settings-grid">
@@ -47,33 +111,125 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         </div>
       </div>
 
+      {/* P1 Income */}
       <div className="card">
-        <div className="card-title">Monthly income</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <span className="card-title" style={{ margin: 0 }}>{settings.p1_name}'s income</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {['monthly', 'biweekly'].map(m => (
+              <button key={m} onClick={() => save('p1_income_mode', m)}
+                className="btn" style={{ height: 26, padding: '0 10px', fontSize: 11,
+                  background: p1Mode === m ? 'var(--c-text-primary)' : 'transparent',
+                  color: p1Mode === m ? 'var(--c-bg)' : 'var(--c-text2)',
+                  fontWeight: p1Mode === m ? 600 : 400 }}>
+                {m.charAt(0).toUpperCase() + m.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="settings-grid">
           <div className="form-group">
-            <label className="form-label">{settings.p1_name}</label>
+            <label className="form-label">{p1Mode === 'biweekly' ? 'Paycheck amount' : 'Monthly amount'}</label>
             <input type="number" defaultValue={settings.p1_income} placeholder="0" min="0"
               onBlur={e => save('p1_income', e.target.value || '0')} />
           </div>
+          {p1Mode === 'biweekly' && (
+            <div className="form-group">
+              <label className="form-label">Last pay date (for calc)</label>
+              <input type="date" defaultValue={settings.p1_pay_anchor || ''}
+                onBlur={e => save('p1_pay_anchor', e.target.value)} />
+            </div>
+          )}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--c-text2)' }}>
+          {p1Mode === 'biweekly'
+            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...currentMonth.split('-').map(Number), settings.p1_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p1Effective)}`
+            : `Monthly: ${fmt(p1Effective)}`
+          }
+          {p1Bonuses > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+{fmt(p1Bonuses)} bonus → {fmt(p1Total)}</span>}
+        </div>
+      </div>
+
+      {/* P2 Income */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <span className="card-title" style={{ margin: 0 }}>{settings.p2_name}'s income</span>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {['monthly', 'biweekly'].map(m => (
+              <button key={m} onClick={() => save('p2_income_mode', m)}
+                className="btn" style={{ height: 26, padding: '0 10px', fontSize: 11,
+                  background: p2Mode === m ? 'var(--c-text-primary)' : 'transparent',
+                  color: p2Mode === m ? 'var(--c-bg)' : 'var(--c-text2)',
+                  fontWeight: p2Mode === m ? 600 : 400 }}>
+                {m.charAt(0).toUpperCase() + m.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="settings-grid">
           <div className="form-group">
-            <label className="form-label">{settings.p2_name} — base salary</label>
+            <label className="form-label">{p2Mode === 'biweekly' ? 'Paycheck amount' : 'Monthly amount'}</label>
             <input type="number" defaultValue={settings.p2_income} placeholder="0" min="0"
               onBlur={e => save('p2_income', e.target.value || '0')} />
           </div>
+          {p2Mode === 'biweekly' && (
+            <div className="form-group">
+              <label className="form-label">Last pay date (for calc)</label>
+              <input type="date" defaultValue={settings.p2_pay_anchor || ''}
+                onBlur={e => save('p2_pay_anchor', e.target.value)} />
+            </div>
+          )}
         </div>
-        {p2BookIncome > 0 && (
-          <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--c-green-bg)', borderRadius: 'var(--radius)', fontSize: 13 }}>
-            <span style={{ color: 'var(--c-green)', fontWeight: 500 }}>+ {fmt(p2BookIncome)} book profit this month</span>
-            <span style={{ color: 'var(--c-text2)', marginLeft: 8 }}>→ {settings.p2_name} total: {fmt(p2Total)}</span>
-          </div>
-        )}
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--c-text2)' }}>
+          {p2Mode === 'biweekly'
+            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...currentMonth.split('-').map(Number), settings.p2_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p2Base)}`
+            : `Monthly: ${fmt(p2Base)}`
+          }
+          {p2BookIncome > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+{fmt(p2BookIncome)} books</span>}
+          {p2Bonuses > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+{fmt(p2Bonuses)} bonus</span>}
+          {(p2BookIncome > 0 || p2Bonuses > 0) && <span style={{ color: 'var(--c-text)', marginLeft: 8, fontWeight: 500 }}>→ {fmt(p2Total)}</span>}
+        </div>
       </div>
 
+      {/* Bonuses */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <span className="card-title" style={{ margin: 0 }}>Bonuses — {currentMonth}</span>
+          <button className="btn btn-primary" style={{ height: 28, padding: '0 12px', fontSize: 12 }}
+            onClick={() => setShowBonusForm(v => !v)}>
+            {showBonusForm ? 'Cancel' : '+ Add bonus'}
+          </button>
+        </div>
+
+        {showBonusForm && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px auto', gap: 8, marginBottom: 14, alignItems: 'end' }}>
+            <input type="text" placeholder="Description (e.g. Year-end bonus)" value={bonusDesc} onChange={e => setBonusDesc(e.target.value)} />
+            <input type="number" placeholder="$0.00" value={bonusAmt} min="0" step="0.01" onChange={e => setBonusAmt(e.target.value)} />
+            <select value={bonusWho} onChange={e => setBonusWho(e.target.value)}>
+              <option value="p1">{settings.p1_name}</option>
+              <option value="p2">{settings.p2_name}</option>
+            </select>
+            <button className="btn btn-primary" onClick={addBonus} disabled={addingBonus}>{addingBonus ? '…' : 'Save'}</button>
+          </div>
+        )}
+
+        {monthBonuses.length === 0
+          ? <p style={{ fontSize: 13, color: 'var(--c-text3)' }}>No bonuses this month.</p>
+          : monthBonuses.map(b => (
+            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--c-border)', fontSize: 13 }}>
+              <span style={{ flex: 1 }}>{b.description}</span>
+              <span style={{ color: 'var(--c-text2)' }}>{b.paid_to === 'p1' ? settings.p1_name : settings.p2_name}</span>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 500, color: 'var(--c-green)' }}>+{fmt(b.amount)}</span>
+              <button className="exp-del" onClick={() => deleteBonus(b.id)}>×</button>
+            </div>
+          ))
+        }
+      </div>
+
+      {/* Data */}
       <div className="card">
         <div className="card-title">Data</div>
-        <p style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 12 }}>
-          All data is shared in real-time with anyone who has the app URL.
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--c-text2)', marginBottom: 12 }}>All data is shared in real-time with anyone who has the app URL.</p>
         <button className="btn" onClick={exportCSV}>Export CSV</button>
       </div>
     </div>
