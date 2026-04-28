@@ -22,7 +22,7 @@ function biweeklyPaychecksInMonth(year, month, firstPayDate) {
   return count
 }
 
-export default function Settings({ settings, setSettings, setSyncing, p2BookIncome, bonuses, currentMonth }) {
+export default function Settings({ settings, setSettings, setSyncing, p2BookIncome, bonuses = [], currentMonth }) {
   const [showBonusForm, setShowBonusForm] = useState(false)
   const [bonusDesc, setBonusDesc] = useState('')
   const [bonusAmt, setBonusAmt] = useState('')
