@@ -83,7 +83,8 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
     return (parseFloat(paycheck) || 0) * checks
   }
 
-  const [yr, mo] = currentMonth.split('-').map(Number)
+  const safeMonth = currentMonth || new Date().toISOString().slice(0, 7)
+  const [yr, mo] = safeMonth.split('-').map(Number)
   const p1Effective = effectiveMonthly(settings.p1_income, p1Mode, settings.p1_pay_anchor, currentMonth)
   const p2Base = effectiveMonthly(settings.p2_income, p2Mode, settings.p2_pay_anchor, currentMonth)
   const monthBonuses = bonuses.filter(b => b.month === currentMonth)
@@ -143,7 +144,7 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         </div>
         <div style={{ marginTop: 10, fontSize: 13, color: 'var(--c-text2)' }}>
           {p1Mode === 'biweekly'
-            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...currentMonth.split('-').map(Number), settings.p1_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p1Effective)}`
+            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...safeMonth.split('-').map(Number), settings.p1_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p1Effective)}`
             : `Monthly: ${fmt(p1Effective)}`
           }
           {p1Bonuses > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+{fmt(p1Bonuses)} bonus → {fmt(p1Total)}</span>}
@@ -182,7 +183,7 @@ export default function Settings({ settings, setSettings, setSyncing, p2BookInco
         </div>
         <div style={{ marginTop: 10, fontSize: 13, color: 'var(--c-text2)' }}>
           {p2Mode === 'biweekly'
-            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...currentMonth.split('-').map(Number), settings.p2_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p2Base)}`
+            ? `${currentMonth}: ${biweeklyPaychecksInMonth(...safeMonth.split('-').map(Number), settings.p2_pay_anchor || new Date().toISOString().slice(0,10))} paychecks → ${fmt(p2Base)}`
             : `Monthly: ${fmt(p2Base)}`
           }
           {p2BookIncome > 0 && <span style={{ color: 'var(--c-green)', marginLeft: 8 }}>+{fmt(p2BookIncome)} books</span>}
