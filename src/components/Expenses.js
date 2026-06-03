@@ -1,5 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+
+// Build suggestion list from all expenses (across all months)
+function buildSuggestions(allExpenses) {
+  const map = {}
+  allExpenses.forEach(e => {
+    if (!e.description || e.is_refund || parseFloat(e.amount) < 0) return
+    const key = e.description.trim().toLowerCase()
+    if (!map[key]) {
+      map[key] = { description: e.description.trim(), category: e.category, amounts: [], count: 0 }
+    }
+    map[key].amounts.push(parseFloat(e.amount))
+    map[key].count++
+  })
+  // For each suggestion, use the most recent/common category and median amount
+  return Object.values(map).map(s => {
+    const sorted = [...s.amounts].sort((a, b) => a - b)
+    const median = sorted[Math.floor(sorted.length / 2)]
+    return { description: s.description, category: s.category, amount: median, count: s.count }
+  }).sort((a, b) => b.count - a.count)
+}
 
 const CATEGORIES = ['Housing', 'Food', 'Transport', 'Health', 'Entertainment', 'Shopping', 'Snacks', 'Utilities', 'Insurance', 'Subscriptions', 'Other']
 
@@ -25,7 +45,7 @@ const fmtDate = (d) => {
   return `${month}/${day}/${year}`
 }
 
-export default function Expenses({ expenses, settings, currentMonth, setSyncing }) {
+export default function Expenses({ expenses, allExpenses = [], settings, currentMonth, setSyncing }) {
   const [desc, setDesc] = useState('')
   const [cat, setCat] = useState('Food')
   const [amount, setAmount] = useState('')
@@ -34,6 +54,24 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
   const [filter, setFilter] = useState('')
   const [adding, setAdding] = useState(false)
   const [editCatId, setEditCatId] = useState(null)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const descRef = useRef(null)
+
+  const suggestions = useMemo(() => buildSuggestions(allExpenses), [allExpenses])
+
+  const matchedSuggestions = useMemo(() => {
+    if (!desc.trim() || desc.length < 2) return []
+    const q = desc.trim().toLowerCase()
+    return suggestions.filter(s => s.description.toLowerCase().includes(q)).slice(0, 6)
+  }, [desc, suggestions])
+
+  const applySuggestion = (s) => {
+    setDesc(s.description)
+    setCat(s.category)
+    setAmount(String(s.amount))
+    setShowSuggestions(false)
+    setTimeout(() => descRef.current?.focus(), 0)
+  }
 
   // Refund form state
   const [refundDesc, setRefundDesc] = useState('')
@@ -162,8 +200,55 @@ export default function Expenses({ expenses, settings, currentMonth, setSyncing 
           </div>
         ) : (
           <div className="add-form">
-            <input type="text" placeholder="Description" value={desc}
-              onChange={e => setDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
+            <div style={{ position: 'relative' }}>
+              <input
+                ref={descRef}
+                type="text"
+                placeholder="Description"
+                value={desc}
+                onChange={e => { setDesc(e.target.value); setShowSuggestions(true) }}
+                onKeyDown={e => e.key === 'Enter' && add()}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                autoComplete="off"
+              />
+              {showSuggestions && matchedSuggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                  background: 'var(--c-surface)', border: '1px solid var(--c-border)',
+                  borderRadius: 'var(--radius)', boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                  marginTop: 4, overflow: 'hidden',
+                }}>
+                  <div style={{ padding: '6px 10px 4px', fontSize: 11, color: 'var(--c-text3)', borderBottom: '1px solid var(--c-border)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Past expenses
+                  </div>
+                  {matchedSuggestions.map((s, i) => {
+                    const colors = CAT_COLORS[s.category] || { bg: '#f0efe9', text: '#6b6960' }
+                    return (
+                      <div
+                        key={i}
+                        onMouseDown={() => applySuggestion(s)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '8px 12px', cursor: 'pointer',
+                          borderBottom: i < matchedSuggestions.length - 1 ? '1px solid var(--c-border)' : 'none',
+                          transition: 'background 0.1s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--c-surface2)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span style={{ flex: 1, fontSize: 13 }}>{s.description}</span>
+                        <span className="badge" style={{ background: colors.bg, color: colors.text, fontSize: 10, padding: '2px 7px', borderRadius: 20, flexShrink: 0 }}>{s.category}</span>
+                        <span style={{ fontSize: 12, fontFamily: "'DM Mono', monospace", color: 'var(--c-text2)', flexShrink: 0 }}>
+                          ${s.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--c-text3)', flexShrink: 0 }}>×{s.count}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
             <div className="add-form-row">
               <select value={cat} onChange={e => setCat(e.target.value)}>
                 {CATEGORIES.map(c => <option key={c}>{c}</option>)}

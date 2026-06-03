@@ -156,7 +156,7 @@ export default function App() {
       </nav>
 
       <main className="app-main">
-        {tab === 'Expenses' && <Expenses expenses={monthExpenses} settings={settings} currentMonth={currentMonth} setSyncing={setSyncing} />}
+        {tab === 'Expenses' && <Expenses expenses={monthExpenses} allExpenses={expenses} settings={settings} currentMonth={currentMonth} setSyncing={setSyncing} />}
         {tab === 'Budgets' && <Budgets expenses={monthExpenses} budgets={budgets} setSyncing={setSyncing} />}
         {tab === 'Split' && <Split expenses={monthExpenses} settings={settings} bookProfit={bookProfit} p1Bonuses={p1Bonuses} p2Bonuses={p2Bonuses} />}
         {tab === 'Books' && <Books books={monthBooks} currentMonth={currentMonth} setSyncing={setSyncing} settings={settings} />}
