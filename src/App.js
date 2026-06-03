@@ -55,7 +55,7 @@ export default function App() {
 
   const fetchAll = useCallback(async () => {
     const [{ data: expData }, { data: budData }, { data: setData }, { data: bookData }, { data: recData }, { data: bonData }, { data: ihData }] = await Promise.all([
-      supabase.from('expenses').select('*').order('created_at', { ascending: false }),
+      supabase.from('expenses').select('*').order('created_at', { ascending: false }).limit(5000),
       supabase.from('budgets').select('*'),
       supabase.from('settings').select('*'),
       supabase.from('books').select('*').order('date', { ascending: false }),
